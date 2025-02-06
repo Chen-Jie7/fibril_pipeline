@@ -1,0 +1,66 @@
+#PHASES allows one to control different phases of the pipeline
+Phases:
+  #Phase 1: Get PDBs, clean them up, and fast relax them
+  Phase1: False
+  #Phase 2: Run MPNN
+  Phase2: True
+
+### Overall Setting
+filepath:
+  conda_env_path: "/endosome/work/CAND/shared/Chens/miniforge3/envs/upside2"
+  out_folder: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign"  # Path to output sequences folder
+  proteinMPNN_path: "/work/CAND/shared/Chens/AD_fibrils/ProteinMPNN"
+  #Could use all three it will just gather them together
+  data_bank_pdb_name: "7YMN" #Names of the PDB file to be designed, could be directly from the pdb data bank
+  #"1a42, 1a43, 1a44"
+  pdb_path: ""  # Path to a single PDB to be designed
+  pdb_folder_path: ""  # Path to a folder with PDB files to be designed
+
+# Phase 1
+### Renaming Chains and residues, retaining only one fibril, adding layers, fast relax
+pdb_clean_up:
+  layers: 3  # Number of layers in the fibril
+  fast_relax: True  # Flag to use fast relax to clean up the PDB
+
+# Phase 2
+### MPNN Model Setting
+mpnn_model_config:
+  ##Very important, should be changed
+  chains_to_design: "A B C"  # Define which chains need to be designed for a single PDB
+  #Specify the positions to design, if this is specifcied then fixed_positions and tied_positions 
+  #SHOULD NOT be specified
+  #since they will be generated automatically
+  positions_to_design: "10 15 24 10" #"9 10 11, 10 11 22"
+  fixed_positions: "" #"9 10 11, 10 11"
+  tied_positions: "" #"1 2 3 4, 1 2 3 4 " #two list must match in length; residue 1 in chain A and C will be sampled togther;
+  omit_AAs: ""  # Amino acids to omit from generated sequence
+
+  num_seq_per_target: 500  # Number of sequences to generate per target
+  batch_size: 1  # Batch size; reduce if running out of GPU memory
+  sampling_temp: "0.4"  # Sampling temperature for amino acids (0.1-0.3 recommended)
+
+  #Not as important, can be changed
+  suppress_print: 0  # 0 for False, 1 for True
+  ca_only: false  # Parse CA-only structures and use CA-only models
+  path_to_model_weights: ""  # Path to model weights folder
+  model_name: "v_48_020"  # ProteinMPNN model name: v_48_002, v_48_010, v_48_020, v_48_030
+  use_soluble_model: false  # Flag to load ProteinMPNN weights trained on soluble proteins only
+  seed: 0  # If set to 0 then a random seed will be picked
+  save_score: 0  # 0 for False, 1 for True; save score=-log_prob to npy files
+  path_to_fasta: ""  # Score provided input sequence in fasta format; e.g. GGGGGG/PPPPS/WWW for chains A,B,C
+  save_probs: 0  # 0 for False, 1 for True; save MPNN predicted probabilities per position
+  score_only: 0  # 0 for False, 1 for True; score input backbone-sequence pairs
+  conditional_probs_only: 0  # 0 for False, 1 for True; output conditional probabilities
+  conditional_probs_only_backbone: 0  # 0 for False, 1 for True; output backbone conditional probabilities
+  unconditional_probs_only: 0  # 0 for False, 1 for True; output unconditional probabilities
+  backbone_noise: 0.00  # Standard deviation of Gaussian noise to add to backbone atoms
+  
+  bias_AA_jsonl: ""  # Path to dictionary for AA composition bias
+  bias_by_res_jsonl: ""  # Path to dictionary with per position bias
+  omit_AA_jsonl: ""  # Path to dictionary specifying AAs to omit at specific positions
+  pssm_jsonl: ""  # Path to dictionary with PSSM
+  pssm_multi: 0.0  # Weight between MPNN and PSSM (0.0-1.0)
+  pssm_threshold: 0.0  # Threshold for restricting per position AAs
+  pssm_log_odds_flag: 0  # 0 for False, 1 for True
+  pssm_bias_flag: 0  # 0 for False, 1 for True
+  tied_positions_jsonl: ""  # Path to dictionary with tied positions
