@@ -21,6 +21,6 @@ dependencies:
   - ipykernel
   - pip
   - pip:
-    - pyrosetta
     - nglview
     - plotly
+    - pyrosetta-installer=0.1.1
