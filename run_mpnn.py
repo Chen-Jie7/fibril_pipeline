@@ -67,14 +67,19 @@ def run_mpnn(pdb_name, config):
         chain = structure[0]['A']
         chain_length = len(chain)
 
-        fixed_chain = [str(i) for i in range(1, chain_length + 1) if i not in positions_to_design]
-        fixed_chain_position = ' '.join(list(fixed_chain))
-        tied_position = ' '.join(list(positions_to_design))
+        fixed_chain = [str(i) for i in range(1, chain_length) if i not in positions_to_design]
+        fixed_chain= ' '.join(list(fixed_chain))
+        #repeat fix for number of chains to design
+        fixed_chain_position = ""
+        for i in range(len(config["mpnn_model_config"]["chains_to_design"].split())):
+            fixed_chain_position += (fixed_chain + ", ")
+        fixed_chain_position = fixed_chain_position[:-2]
+        tied_position = ' '.join(list(positions_to_design)) 
         tied_chain_position = ""
         #tied all the chains you want to redesign together since its fibrils
         for i in range(len(config["mpnn_model_config"]["chains_to_design"].split())):
-            tied_chain_position += (tied_position + ",")
-        tied_chain_position = tied_chain_position[:-1]
+            tied_chain_position += (tied_position + ", ")
+        tied_chain_position = tied_chain_position[:-2]
     else:
         fixed_chain_position = config["mpnn_model_config"]["fixed_positions"]
         tied_chain_position = config["mpnn_model_config"]["tied_positions"]
@@ -153,10 +158,10 @@ python {proteinMPNN_path}/protein_mpnn_run.py \\
         {f'--tied_positions_jsonl {config["mpnn_model_config"]["tied_positions_jsonl"]}' if config["mpnn_model_config"]["tied_positions_jsonl"] != "" else ""}
 
     """
-    print(f"Bash file path: {config['filepath']['out_folder']}/{pdb_name}_mpnn.sh")
-    with open(f"{config['filepath']['out_folder']}/{pdb_name}_mpnn.sh", "w") as f:
+    print(f"Bash file path: {config['filepath']['out_folder']}/{pdb_name}/{pdb_name}_mpnn.sh")
+    with open(f"{config['filepath']['out_folder']}/{pdb_name}/{pdb_name}_mpnn.sh", "w") as f:
         f.write(run_bash_file)
-    os.system(f"sbatch {config['filepath']['out_folder']}/{pdb_name}_mpnn.sh")
+    os.system(f"sbatch {config['filepath']['out_folder']}/{pdb_name}/{pdb_name}_mpnn.sh")
 
 if __name__ == "__main__":
     config_path = "mpnn_config.yaml"

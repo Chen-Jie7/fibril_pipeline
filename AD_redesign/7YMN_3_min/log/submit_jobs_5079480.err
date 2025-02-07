@@ -1,7 +1,0 @@
-which: no fi_info in (/endosome/work/CAND/shared/Chens/miniforge3/envs/upside2/bin:/work/CAND/shared/Chens/proteinMPNN/localcolabfold/colabfold-conda/bin:/work/CAND/shared/Chens/miniforge3/bin:/home2/s229066/.cursor-server/cli/servers/Stable-d9f8a232158c173cb84b31a70a49a9689bf0f770/server/bin/remote-cli:/endosome/work/CAND/shared/Chens/miniforge3/condabin:/cm/shared/apps/slurm/16.05.8/sbin:/cm/shared/apps/slurm/16.05.8/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/ibutils/bin:/sbin:/usr/sbin:/cm/local/apps/environment-modules/3.2.10/bin:/home2/s229066/bin:/home2/s229066/bin)
-Traceback (most recent call last):
-  File "/work/CAND/shared/Chens/AD_fibrils/ProteinMPNN/helper_scripts/make_fixed_positions_dict.py", line 58, in <module>
-    main(args)
-  File "/work/CAND/shared/Chens/AD_fibrils/ProteinMPNN/helper_scripts/make_fixed_positions_dict.py", line 23, in main
-    fixed_position_dict[chain] = fixed_list[i]
-IndexError: list index out of range

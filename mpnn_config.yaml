@@ -36,7 +36,7 @@ mpnn_model_config:
   tied_positions: "" #"1 2 3 4, 1 2 3 4 " #two list must match in length; residue 1 in chain A and C will be sampled togther;
   omit_AAs: ""  # Amino acids to omit from generated sequence
 
-  num_seq_per_target: 50  # Number of sequences to generate per target
+  num_seq_per_target: 5  # Number of sequences to generate per target
   batch_size: 1  # Batch size; reduce if running out of GPU memory
   sampling_temp: "0.4"  # Sampling temperature for amino acids (0.1-0.3 recommended)
 

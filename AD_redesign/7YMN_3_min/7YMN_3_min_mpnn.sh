@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=MPNN_7YMN_3_min
-#SBATCH --partition=256GBv1
+#SBATCH --partition=256GBv2
 #SBATCH --nodes=1
-#SBATCH --time=12:20:00  # Correct time format
+#SBATCH --time=5:00:00  # Correct time format
 #SBATCH --output=/work/CAND/shared/Chens/AD_fibrils/AD_redesign/7YMN_3_min/log/submit_jobs_%j.out
 #SBATCH --error=/work/CAND/shared/Chens/AD_fibrils/AD_redesign/7YMN_3_min/log/submit_jobs_%j.err
 
@@ -21,8 +21,8 @@ path_for_tied_positions=$output_dir"/tied_pdbs.jsonl"
 pdb_path=/work/CAND/shared/Chens/AD_fibrils/AD_redesign/7YMN_3_min
 
 chains_to_design="A B"
-fixed_positions="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76"
-tied_positions="10 15 24 10,10 15 24 10"
+fixed_positions="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75, 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75"
+tied_positions="10 15 24 10, 10 15 24 10"
 
 python /work/CAND/shared/Chens/AD_fibrils/ProteinMPNN/helper_scripts/parse_multiple_chains.py --input_path=$pdb_path --output_path=$path_for_parsed_chains
 
@@ -38,7 +38,7 @@ python /work/CAND/shared/Chens/AD_fibrils/ProteinMPNN/protein_mpnn_run.py \
         --fixed_positions_jsonl $path_for_fixed_positions \
         --tied_positions_jsonl $path_for_tied_positions \
         --out_folder $output_dir \
-        --num_seq_per_target 50 \
+        --num_seq_per_target 5 \
         --sampling_temp 0.4 \
         --batch_size 1 \
         --suppress_print 0 \
