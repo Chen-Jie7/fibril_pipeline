@@ -9,6 +9,7 @@ Phases:
 filepath:
   conda_env_path: "/endosome/work/CAND/shared/Chens/miniforge3/envs/upside2"
   out_folder: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign"  # Path to output sequences folder
+  
   proteinMPNN_path: "/work/CAND/shared/Chens/AD_fibrils/ProteinMPNN"
   #Could use all three it will just gather them together
   data_bank_pdb_name: "7YMN" #Names of the PDB file to be designed, could be directly from the pdb data bank
@@ -19,14 +20,14 @@ filepath:
 # Phase 1
 ### Renaming Chains and residues, retaining only one fibril, adding layers, fast relax
 pdb_clean_up:
-  layers: 3  # Number of layers in the fibril
+  layers: 3  # Number of layers in the fibril, program can add or delete layers automatically
   fast_relax: True  # Flag to use fast relax to clean up the PDB
 
 # Phase 2
 ### MPNN Model Setting
 mpnn_model_config:
   ##Very important, should be changed
-  chains_to_design: "A B C"  # Define which chains need to be designed for a single PDB
+  chains_to_design: "A B"  # Define which chains need to be designed for a single PDB
   #Specify the positions to design, if this is specifcied then fixed_positions and tied_positions 
   #SHOULD NOT be specified
   #since they will be generated automatically
@@ -35,17 +36,15 @@ mpnn_model_config:
   tied_positions: "" #"1 2 3 4, 1 2 3 4 " #two list must match in length; residue 1 in chain A and C will be sampled togther;
   omit_AAs: ""  # Amino acids to omit from generated sequence
 
-  num_seq_per_target: 500  # Number of sequences to generate per target
+  num_seq_per_target: 50  # Number of sequences to generate per target
   batch_size: 1  # Batch size; reduce if running out of GPU memory
   sampling_temp: "0.4"  # Sampling temperature for amino acids (0.1-0.3 recommended)
 
   #Not as important, can be changed
   suppress_print: 0  # 0 for False, 1 for True
   ca_only: false  # Parse CA-only structures and use CA-only models
-  path_to_model_weights: ""  # Path to model weights folder
-  model_name: "v_48_020"  # ProteinMPNN model name: v_48_002, v_48_010, v_48_020, v_48_030
   use_soluble_model: false  # Flag to load ProteinMPNN weights trained on soluble proteins only
-  seed: 0  # If set to 0 then a random seed will be picked
+  seed: 7  # If set to 0 then a random seed will be picked
   save_score: 0  # 0 for False, 1 for True; save score=-log_prob to npy files
   path_to_fasta: ""  # Score provided input sequence in fasta format; e.g. GGGGGG/PPPPS/WWW for chains A,B,C
   save_probs: 0  # 0 for False, 1 for True; save MPNN predicted probabilities per position

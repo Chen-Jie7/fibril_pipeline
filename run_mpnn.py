@@ -58,8 +58,12 @@ def run_mpnn(pdb_name, config):
     if config["mpnn_model_config"]["positions_to_design"] != "":
         positions_to_design = list(map(str, config["mpnn_model_config"]["positions_to_design"].split()))
         #open pdb file and get how many residues in each chain
-        pdb_path = os.path.join(config["filepath"]["out_folder"],'cleaned_pdbs', pdb_name + '.pdb')
-        structure = Bio.PDB.PDBParser().get_structure(pdb_name, pdb_path)
+        pdb_path = os.path.join(config["filepath"]["out_folder"],pdb_name)
+        if not os.path.exists(pdb_path):
+            os.makedirs(pdb_path)
+            #create a symolink link from the cleaned pdb to the original pdb
+            os.symlink(os.path.join(CLEANED_PDB_FOLDER, pdb_name + '.pdb'), pdb_path + f'/{pdb_name}.pdb')
+        structure = Bio.PDB.PDBParser().get_structure(pdb_name, pdb_path + f'/{pdb_name}.pdb')
         chain = structure[0]['A']
         chain_length = len(chain)
 
@@ -75,16 +79,23 @@ def run_mpnn(pdb_name, config):
         fixed_chain_position = config["mpnn_model_config"]["fixed_positions"]
         tied_chain_position = config["mpnn_model_config"]["tied_positions"]
     proteinMPNN_path = config["filepath"]["proteinMPNN_path"]
+    output_dir = os.path.join(config["filepath"]["out_folder"], pdb_name)
+    print(output_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    log_dir = os.path.join(output_dir, "log")
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
     run_bash_file = f"""#!/bin/bash
 #SBATCH --job-name=MPNN_{pdb_name}
-#SBATCH --partition=256GBv1
+#SBATCH --partition=256GBv2
 #SBATCH --nodes=1
-#SBATCH --time=12:20:00  # Correct time format
-#SBATCH --output=submit_jobs_%j.out
-#SBATCH --error=submit_jobs_%j.err
+#SBATCH --time=5:00:00  # Correct time format
+#SBATCH --output={output_dir}/log/submit_jobs_%j.out
+#SBATCH --error={output_dir}/log/submit_jobs_%j.err
 
 source activate {config["filepath"]["conda_env_path"]}
-output_dir = {os.path.join(config["filepath"]["out_folder"], pdb_name)}
+output_dir={output_dir}
 
 if [ ! -d $output_dir ]
 then
@@ -95,12 +106,13 @@ path_for_parsed_chains=$output_dir"/parsed_pdbs.jsonl"
 path_for_assigned_chains=$output_dir"/assigned_pdbs.jsonl"
 path_for_fixed_positions=$output_dir"/fixed_pdbs.jsonl"
 path_for_tied_positions=$output_dir"/tied_pdbs.jsonl"
+pdb_path={pdb_path}
 
 chains_to_design="{config["mpnn_model_config"]["chains_to_design"]}"
 fixed_positions="{fixed_chain_position}"
 tied_positions="{tied_chain_position}"
 
-python {proteinMPNN_path}/helper_scripts/parse_multiple_chains.py --input_path=$folder_with_pdbs --output_path=$path_for_parsed_chains
+python {proteinMPNN_path}/helper_scripts/parse_multiple_chains.py --input_path=$pdb_path --output_path=$path_for_parsed_chains
 
 python {proteinMPNN_path}/helper_scripts/assign_fixed_chains.py --input_path=$path_for_parsed_chains --output_path=$path_for_assigned_chains --chain_list "$chains_to_design"
 
@@ -116,12 +128,8 @@ python {proteinMPNN_path}/protein_mpnn_run.py \\
         --out_folder $output_dir \\
         --num_seq_per_target {config["mpnn_model_config"]["num_seq_per_target"]} \\
         --sampling_temp {config["mpnn_model_config"]["sampling_temp"]} \\
-        --seed {config["mpnn_model_config"]["seed"]} \\
         --batch_size {config["mpnn_model_config"]["batch_size"]} \\
         --suppress_print {config["mpnn_model_config"]["suppress_print"]} \\
-        --ca_only {str(config["mpnn_model_config"]["ca_only"]).lower()} \\
-        --model_name {config["mpnn_model_config"]["model_name"]} \\
-        --use_soluble_model {str(config["mpnn_model_config"]["use_soluble_model"]).lower()} \\
         --seed {config["mpnn_model_config"]["seed"]} \\
         --save_score {config["mpnn_model_config"]["save_score"]} \\
         --save_probs {config["mpnn_model_config"]["save_probs"]} \\
@@ -130,22 +138,25 @@ python {proteinMPNN_path}/protein_mpnn_run.py \\
         --conditional_probs_only_backbone {config["mpnn_model_config"]["conditional_probs_only_backbone"]} \\
         --unconditional_probs_only {config["mpnn_model_config"]["unconditional_probs_only"]} \\
         --backbone_noise {config["mpnn_model_config"]["backbone_noise"]} \\
-        --omit_AAs {config["mpnn_model_config"]["omit_AAs"]} \\
         --pssm_multi {config["mpnn_model_config"]["pssm_multi"]} \\
         --pssm_threshold {config["mpnn_model_config"]["pssm_threshold"]} \\
         --pssm_log_odds_flag {config["mpnn_model_config"]["pssm_log_odds_flag"]} \\
         --pssm_bias_flag {config["mpnn_model_config"]["pssm_bias_flag"]} \\
-        --path_to_model_weights {config["mpnn_model_config"]["path_to_model_weights"]} \\
-        --path_to_fasta {config["mpnn_model_config"]["path_to_fasta"]} \\
-        --bias_AA_jsonl {config["mpnn_model_config"]["bias_AA_jsonl"]} \\
-        --bias_by_res_jsonl {config["mpnn_model_config"]["bias_by_res_jsonl"]} \\
-        --omit_AA_jsonl {config["mpnn_model_config"]["omit_AA_jsonl"]} \\
-        --pssm_jsonl {config["mpnn_model_config"]["pssm_jsonl"]} \\
-        --tied_positions_jsonl {config["mpnn_model_config"]["tied_positions_jsonl"]}
+        {f'--ca_only {str(config["mpnn_model_config"]["ca_only"])}' if config["mpnn_model_config"]["ca_only"] != False else ""} \
+        {f'--use_soluble_model {str(config["mpnn_model_config"]["use_soluble_model"])}' if config["mpnn_model_config"]["use_soluble_model"] != False else ""} \
+        {f'--omit_AAs {config["mpnn_model_config"]["omit_AAs"]}' if config["mpnn_model_config"]["omit_AAs"] != "" else ""} \
+        {f'--path_to_fasta {config["mpnn_model_config"]["path_to_fasta"]}' if config["mpnn_model_config"]["path_to_fasta"] != "" else ""} \
+        {f'--bias_AA_jsonl {config["mpnn_model_config"]["bias_AA_jsonl"]}' if config["mpnn_model_config"]["bias_AA_jsonl"] != "" else ""} \
+        {f'--bias_by_res_jsonl {config["mpnn_model_config"]["bias_by_res_jsonl"]}' if config["mpnn_model_config"]["bias_by_res_jsonl"] != "" else ""} \
+        {f'--omit_AA_jsonl {config["mpnn_model_config"]["omit_AA_jsonl"]}' if config["mpnn_model_config"]["omit_AA_jsonl"] != "" else ""} \
+        {f'--pssm_jsonl {config["mpnn_model_config"]["pssm_jsonl"]}' if config["mpnn_model_config"]["pssm_jsonl"] != "" else ""} \
+        {f'--tied_positions_jsonl {config["mpnn_model_config"]["tied_positions_jsonl"]}' if config["mpnn_model_config"]["tied_positions_jsonl"] != "" else ""}
+
     """
     print(f"Bash file path: {config['filepath']['out_folder']}/{pdb_name}_mpnn.sh")
     with open(f"{config['filepath']['out_folder']}/{pdb_name}_mpnn.sh", "w") as f:
         f.write(run_bash_file)
+    os.system(f"sbatch {config['filepath']['out_folder']}/{pdb_name}_mpnn.sh")
 
 if __name__ == "__main__":
     config_path = "mpnn_config.yaml"
@@ -178,12 +189,12 @@ if __name__ == "__main__":
         if config["pdb_clean_up"]["fast_relax"]:
             _fast_relax(CLEANED_PDB_FOLDER, config["pdb_clean_up"]["layers"])
 
-        print("Phase 1 complete")
+        print("Clean Up Complete")
 
     if config["Phases"]["Phase2"]:
         for pdb_name in os.listdir(CLEANED_PDB_FOLDER):
             if pdb_name.endswith("min.pdb"):
                 run_mpnn(pdb_name.split('.')[0], config)
-        print("Phase 2 complete")
+        print("MPNN Submitted")
 
 
