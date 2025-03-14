@@ -1,11 +1,12 @@
 #PHASES allows one to control different phases of the pipeline
+#Only one phase can be run at a time
 Phases:
   #Phase 1: Get PDBs, clean them up, and fast relax them
   Phase1: False
   #Phase 2: Run MPNN
-  Phase2: False
+  Phase2: True
   #Phase 3: Clean up the MPNN output for ddg calculation and energetic analysis
-  Phase3: True
+  Phase3: False
   #Phase 4: Design the top N fibrils with the lowest energetics
   Phase4: False
   #Phase 5: Run Upside on the top N fibrils

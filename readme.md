@@ -20,6 +20,7 @@ Fetch pdb -> chain renaming based on 3D coordinates(since only takes one fibril)
         b. python -c 'import pyrosetta_installer; pyrosetta_installer.install_pyrosetta(mirror=1)'
 
     *Verify run*:
+    Only one phase can be run at a time
     python 1_run_mpnn.py
     - This will run the current 7ymn sample based on mpnn_config file spcifications.
     - Aka pdb is in cleaned up, minimized, then launch the job mpnn for you
