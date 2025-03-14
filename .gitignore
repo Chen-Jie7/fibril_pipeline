@@ -2,6 +2,8 @@
 # Ignore all files inside folders
 *
 !*/
+#except helper_scripts
+!helper_scripts/*
 # Ignore specific file
 !testing.ipynb
 # End Generation Here
