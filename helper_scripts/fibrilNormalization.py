@@ -14,8 +14,6 @@ import argparse
 import sys
 
 
-
-
 def _initialize_pyrosetta(memory_limit=None):
     """Initialize PyRosetta with optional memory limit"""
     init_options = []

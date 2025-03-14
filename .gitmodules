@@ -1,3 +1,7 @@
 [submodule "ProteinMPNN"]
 	path = ProteinMPNN
 	url = https://github.com/dauparas/ProteinMPNN.git
+	
+[submodule "upside2-md"]
+	path = upside2-md
+	url = https://github.com/sosnicklab/upside2-md.git

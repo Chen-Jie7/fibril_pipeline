@@ -1,0 +1,13 @@
+# Start of Selection
+# Start Generation Here
+# Ignore updates to all folders in the directory except for the helper_script folder
+/*
+# Ignore everything
+*
+
+# Except for the helper_script folder
+!/helper_script/*
+# Don't ignore changes in the directory that aren't folders
+!/*
+# End of Selection
+*/

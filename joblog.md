@@ -1,0 +1,1 @@
+Tested the running of multiprocessing and parallelizing energetic minimization for temp 0.3, if sucessful should extend all other temperatures

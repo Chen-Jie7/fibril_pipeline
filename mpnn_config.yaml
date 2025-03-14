@@ -3,13 +3,20 @@ Phases:
   #Phase 1: Get PDBs, clean them up, and fast relax them
   Phase1: False
   #Phase 2: Run MPNN
-  Phase2: True
+  Phase2: False
+  #Phase 3: Clean up the MPNN output for ddg calculation and energetic analysis
+  Phase3: False
+  #Phase 4: Design the top N fibrils with the lowest energetics
+  Phase4: False
+  #Phase 5: Run Upside on the top N fibrils
+  #FILE 2_run_upside.py
+  Phase5: True
 
 ### Overall Setting
 filepath:
   conda_env_path: "/endosome/work/CAND/shared/Chens/miniforge3/envs/upside2"
   out_folder: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign"  # Path to output sequences folder
-  
+  energetic_calculation_path: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign/energetics_calculation"
   proteinMPNN_path: "/work/CAND/shared/Chens/AD_fibrils/ProteinMPNN"
   #Could use all three it will just gather them together
   data_bank_pdb_name: "7YMN" #Names of the PDB file to be designed, could be directly from the pdb data bank
@@ -20,31 +27,31 @@ filepath:
 # Phase 1
 ### Renaming Chains and residues, retaining only one fibril, adding layers, fast relax
 pdb_clean_up:
-  layers: 3  # Number of layers in the fibril, program can add or delete layers automatically
+  layers: 5  # Number of layers in the fibril, program can add or delete layers automatically
   fast_relax: True  # Flag to use fast relax to clean up the PDB
 
 # Phase 2
 ### MPNN Model Setting
 mpnn_model_config:
   ##Very important, should be changed
-  chains_to_design: "A B"  # Define which chains need to be designed for a single PDB
+  chains_to_design: "A B C D E"  # Define which chains need to be designed for a single PDB
   #Specify the positions to design, if this is specifcied then fixed_positions and tied_positions 
   #SHOULD NOT be specified
   #since they will be generated automatically
-  positions_to_design: "10 15 24 10" #"9 10 11, 10 11 22"
+  positions_to_design: "1 3 5 9 11 13 15 17 18 20 23 25 28 32 34 36 39 41 45 47 49 52 54 56 58 60 62 63 65 67 69 71 73" #"9 10 11, 10 11 22"
   fixed_positions: "" #"9 10 11, 10 11"
   tied_positions: "" #"1 2 3 4, 1 2 3 4 " #two list must match in length; residue 1 in chain A and C will be sampled togther;
   omit_AAs: ""  # Amino acids to omit from generated sequence
 
-  num_seq_per_target: 5  # Number of sequences to generate per target
-  batch_size: 1  # Batch size; reduce if running out of GPU memory
-  sampling_temp: "0.4"  # Sampling temperature for amino acids (0.1-0.3 recommended)
+  num_seq_per_target: 2000  # Number of sequences to generate per target
+  batch_size: 8  # Batch size; reduce if running out of GPU memory
+  sampling_temp: ["0.3", "0.5", "0.7", "1.0"] # Sampling temperature for amino acids (0.1-0.3 recommended)
 
   #Not as important, can be changed
   suppress_print: 0  # 0 for False, 1 for True
   ca_only: false  # Parse CA-only structures and use CA-only models
   use_soluble_model: false  # Flag to load ProteinMPNN weights trained on soluble proteins only
-  seed: 7  # If set to 0 then a random seed will be picked
+  seed: 42  # If set to 0 then a random seed will be picked
   save_score: 0  # 0 for False, 1 for True; save score=-log_prob to npy files
   path_to_fasta: ""  # Score provided input sequence in fasta format; e.g. GGGGGG/PPPPS/WWW for chains A,B,C
   save_probs: 0  # 0 for False, 1 for True; save MPNN predicted probabilities per position
@@ -63,3 +70,32 @@ mpnn_model_config:
   pssm_log_odds_flag: 0  # 0 for False, 1 for True
   pssm_bias_flag: 0  # 0 for False, 1 for True
   tied_positions_jsonl: ""  # Path to dictionary with tied positions
+
+#Phase 3, clean up the MPNN output by removing duplicates and making them individual fasta
+#for ddg calculation and energetic analysis
+mpnn_cleaning:
+  proteins: ["7YMN_5_min"]
+  temperatures: ["0.3", "0.5", "0.7", "1.0"]
+
+  energy_calculation:
+    #copy sampling temperature above unless you want to only do specific temperature
+    output_path: "/work/CAND/shared/Chens/AD_fibrils/Testing/energetics_calculation"
+
+#Phase 4, design the top N fibrils with the lowest energetics
+fibril_design:
+  proteins: ["7YMN_5_min"]
+  N_fibrils: 15
+  output_path: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign"
+
+#Phase 5, run upside on the top N fibrils
+#FILE 2_run_upside.py
+upside_simulation:
+  userid: "s229066"
+  #sinfo | grep idle to find what cpus are available for faster queue
+  #upside works with anything above 256GB
+  partition: "256GBv2*"
+  upside_path: "/work/CAND/shared/Chens/upside2-md"
+  proteins: ["7YMN_5_min"]
+  output_path: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign"
+  n_reps: 10
+  n_steps: 100000
