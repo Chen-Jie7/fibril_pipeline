@@ -5,12 +5,12 @@ Phases:
   #Phase 2: Run MPNN
   Phase2: False
   #Phase 3: Clean up the MPNN output for ddg calculation and energetic analysis
-  Phase3: False
+  Phase3: True
   #Phase 4: Design the top N fibrils with the lowest energetics
   Phase4: False
   #Phase 5: Run Upside on the top N fibrils
   #FILE 2_run_upside.py
-  Phase5: True
+  Phase5: False
 
 ### Overall Setting
 filepath:
@@ -19,7 +19,7 @@ filepath:
   energetic_calculation_path: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign/energetics_calculation"
   proteinMPNN_path: "/work/CAND/shared/Chens/AD_fibrils/ProteinMPNN"
   #Could use all three it will just gather them together
-  data_bank_pdb_name: "7YMN" #Names of the PDB file to be designed, could be directly from the pdb data bank
+  data_bank_pdb_name: "6HRE" #Names of the PDB file to be designed, could be directly from the pdb data bank
   #"1a42, 1a43, 1a44"
   pdb_path: ""  # Path to a single PDB to be designed
   pdb_folder_path: ""  # Path to a folder with PDB files to be designed
@@ -38,17 +38,17 @@ mpnn_model_config:
   #Specify the positions to design, if this is specifcied then fixed_positions and tied_positions 
   #SHOULD NOT be specified
   #since they will be generated automatically
-  positions_to_design: "1 3 5 9 11 13 15 17 18 20 23 25 28 32 34 36 39 41 45 47 49 52 54 56 58 60 62 63 65 67 69 71 73" #"9 10 11, 10 11 22"
+  positions_to_design: "3 5 7 9 11 15 17 19 22 25 27 29 34 36 38 41 43 47 51 54 56 58 60 65 67 69 71 73 75" #"9 10 11, 10 11 22"
   fixed_positions: "" #"9 10 11, 10 11"
   tied_positions: "" #"1 2 3 4, 1 2 3 4 " #two list must match in length; residue 1 in chain A and C will be sampled togther;
   omit_AAs: ""  # Amino acids to omit from generated sequence
 
   num_seq_per_target: 2000  # Number of sequences to generate per target
   batch_size: 8  # Batch size; reduce if running out of GPU memory
-  sampling_temp: ["0.3", "0.5", "0.7", "1.0"] # Sampling temperature for amino acids (0.1-0.3 recommended)
+  sampling_temp: ["0.3", "0.5", "0.7"] # Sampling temperature for amino acids (0.1-0.3 recommended)
+
 
   #Not as important, can be changed
-  suppress_print: 0  # 0 for False, 1 for True
   ca_only: false  # Parse CA-only structures and use CA-only models
   use_soluble_model: false  # Flag to load ProteinMPNN weights trained on soluble proteins only
   seed: 42  # If set to 0 then a random seed will be picked
@@ -59,8 +59,7 @@ mpnn_model_config:
   conditional_probs_only: 0  # 0 for False, 1 for True; output conditional probabilities
   conditional_probs_only_backbone: 0  # 0 for False, 1 for True; output backbone conditional probabilities
   unconditional_probs_only: 0  # 0 for False, 1 for True; output unconditional probabilities
-  backbone_noise: 0.00  # Standard deviation of Gaussian noise to add to backbone atoms
-  
+  backbone_noise: .2  # Standard deviation of Gaussian noise to add to backbone atoms
   bias_AA_jsonl: ""  # Path to dictionary for AA composition bias
   bias_by_res_jsonl: ""  # Path to dictionary with per position bias
   omit_AA_jsonl: ""  # Path to dictionary specifying AAs to omit at specific positions

@@ -1,13 +1,8 @@
-# Start of Selection
 # Start Generation Here
-# Ignore updates to all folders in the directory except for the helper_script folder
-/*
-# Ignore everything
+# Ignore all files inside folders
 *
+!*/
+# Ignore specific file
+!testing.ipynb
+# End Generation Here
 
-# Except for the helper_script folder
-!/helper_script/*
-# Don't ignore changes in the directory that aren't folders
-!/*
-# End of Selection
-*/

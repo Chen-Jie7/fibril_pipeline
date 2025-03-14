@@ -6,7 +6,6 @@ import urllib.request
 import shutil
 import Bio
 from helper_scripts.fibrilNormalization import extend_fibril, fast_relax
-from helper_scripts.energetics_calculation import calculate_energetics_from_fasta
 from helper_scripts.mpnn_cleaning import combine_fasta_files
 #remove any terminal warning
 import warnings
@@ -15,28 +14,41 @@ import pandas as pd
 
 def _retrieve_pdb_data_bank(pdb_names, output_path):
     print(pdb_names)
+    successful_pdbs = []
     for pdb_name in pdb_names:
         #fetch from pdb data bank
         try:
             urllib.request.urlretrieve(f'http://files.rcsb.org/download/{pdb_name}.pdb', f'{output_path}/{pdb_name}.pdb')
+            successful_pdbs.append(pdb_name)
         except Exception as e:
             print(f"Error fetching {pdb_name}.pdb: {e}")
+    return successful_pdbs
 
 def _parse_pdb_file(pdb_file_path, output_path):
+    successful_pdbs = []
     for file in os.listdir(pdb_file_path):
         if file.endswith(".pdb"):
             try:    
                 #copy it to the output path
                 shutil.copy(os.path.join(pdb_file_path, file), os.path.join(output_path, file))
+                # Extract just the base filename without extension
+                pdb_name = os.path.splitext(file)[0]
+                successful_pdbs.append(pdb_name)
             except Exception as e:
                 print(f"Error copying {file}: {e}")
+    return successful_pdbs
 
 def _parse_pdb_file_single(pdb_file_path, output_path):
     try:
+        # Extract just the base filename without path and extension
+        filename = os.path.basename(pdb_file_path)
+        pdb_name = os.path.splitext(filename)[0]
+        
         shutil.copy(pdb_file_path, output_path)
+        return [pdb_name]
     except Exception as e:
         print(f"Error copying {pdb_file_path}: {e}")
-
+        return []
 
 def _clean_up_pdbs(input_folder, output_folder, num_total_layers):
     for file in os.listdir(input_folder):
@@ -48,7 +60,7 @@ def _clean_up_pdbs(input_folder, output_folder, num_total_layers):
 def _fast_relax(input_folder, output_folder):
     for file in os.listdir(input_folder):
         #ignore all minimized pdbs
-        if file.endswith("min.pdb"):
+        if file.split('.')[0] not in RUNNING_PDBS or file.endswith("min.pdb"):
             continue
         else:
             pdb_path = os.path.join(input_folder, file)
@@ -87,6 +99,7 @@ def run_mpnn(pdb_name, config, temp ):
     else:
         fixed_chain_position = config["mpnn_model_config"]["fixed_positions"]
         tied_chain_position = config["mpnn_model_config"]["tied_positions"]
+    
     proteinMPNN_path = config["filepath"]["proteinMPNN_path"]
     output_dir = os.path.join(config["filepath"]["out_folder"], pdb_name)
     if not os.path.exists(os.path.join(output_dir, temp)):
@@ -99,8 +112,8 @@ def run_mpnn(pdb_name, config, temp ):
 #SBATCH --partition=256GBv2
 #SBATCH --nodes=1
 #SBATCH --time=5:00:00  # Correct time format
-#SBATCH --output={output_dir}/log/submit_jobs_%j.out
-#SBATCH --error={output_dir}/log/submit_jobs_%j.err
+#SBATCH --output={output_dir}/logs/submit_jobs_%j.out
+#SBATCH --error={output_dir}/logs/submit_jobs_%j.err
 
 source activate {config["filepath"]["conda_env_path"]}
 output_dir={output_dir}/{temp}
@@ -137,7 +150,6 @@ python {proteinMPNN_path}/protein_mpnn_run.py \\
         --num_seq_per_target {config["mpnn_model_config"]["num_seq_per_target"]} \\
         --sampling_temp {temp} \\
         --batch_size {config["mpnn_model_config"]["batch_size"]} \\
-        --suppress_print {config["mpnn_model_config"]["suppress_print"]} \\
         --seed {config["mpnn_model_config"]["seed"]} \\
         --save_score {config["mpnn_model_config"]["save_score"]} \\
         --save_probs {config["mpnn_model_config"]["save_probs"]} \\
@@ -292,23 +304,25 @@ if __name__ == "__main__":
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
-    global CLEANED_PDB_FOLDER, PDB_FOLDER, CURRENT_FOLDER
+    global CLEANED_PDB_FOLDER, PDB_FOLDER, CURRENT_FOLDER, RUNNING_PDBS
     PDB_FOLDER = os.path.join(config["filepath"]["out_folder"], "original_pdbs")
     CLEANED_PDB_FOLDER = os.path.join(config["filepath"]["out_folder"], "cleaned_pdbs")
     CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
+    RUNNING_PDBS = []
+
+        #Get all the pdb fiels onto the sampe place
+    if config["filepath"]["data_bank_pdb_name"] != "":
+        RUNNING_PDBS.extend(_retrieve_pdb_data_bank(list(config["filepath"]["data_bank_pdb_name"].split(',')), PDB_FOLDER))
+    if config["filepath"]["pdb_folder_path"] != "":
+        RUNNING_PDBS.extend(_parse_pdb_file(config["filepath"]["pdb_folder_path"], PDB_FOLDER))
+    if config["filepath"]["pdb_path"] != "":
+        RUNNING_PDBS.extend(_parse_pdb_file_single(config["filepath"]["pdb_path"], PDB_FOLDER))
+
     if config["Phases"]["Phase1"]:
         #make output folders and subfolders
         os.makedirs(config["filepath"]["out_folder"], exist_ok=True)
         os.makedirs(config["filepath"]["out_folder"] + "/original_pdbs", exist_ok=True)
         os.makedirs(config["filepath"]["out_folder"] + "/cleaned_pdbs", exist_ok=True)
-
-        #Get all the pdb fiels onto the sampe place
-        if config["filepath"]["data_bank_pdb_name"] != "":
-            _retrieve_pdb_data_bank(list(config["filepath"]["data_bank_pdb_name"].split(',')), PDB_FOLDER)
-        if config["filepath"]["pdb_folder_path"] != "":
-            _parse_pdb_file(config["filepath"]["pdb_folder_path"], PDB_FOLDER)
-        if config["filepath"]["pdb_path"] != "":
-            _parse_pdb_file_single(config["filepath"]["pdb_path"], PDB_FOLDER)
 
         print("PDB obtained")
         #Clean up the pdbs
@@ -321,11 +335,13 @@ if __name__ == "__main__":
         print("Clean Up Complete")
 
     if config["Phases"]["Phase2"]:
+        #collect pdbs running rn
+
         for pdb_name in os.listdir(CLEANED_PDB_FOLDER):
-            if pdb_name.endswith("min.pdb"):
+            if pdb_name.split('.')[0].split('_')[0] in RUNNING_PDBS and "min" in pdb_name:
                 for temp in config["mpnn_model_config"]["sampling_temp"]:
                     run_mpnn(pdb_name.split('.')[0], config, temp)
-        print("MPNN Submitted")
+                print("MPNN Submitted")
 
     if config["Phases"]["Phase3"]:
         for protein in config['mpnn_cleaning']['proteins']:
