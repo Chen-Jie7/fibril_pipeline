@@ -60,7 +60,7 @@ def _clean_up_pdbs(input_folder, output_folder, num_total_layers):
 def _fast_relax(input_folder, output_folder):
     for file in os.listdir(input_folder):
         #ignore all minimized pdbs
-        if file.split('.')[0] not in RUNNING_PDBS or file.endswith("min.pdb"):
+        if file.split('.')[0].split('_')[0] not in RUNNING_PDBS or file.endswith("min.pdb"):
             continue
         else:
             pdb_path = os.path.join(input_folder, file)
