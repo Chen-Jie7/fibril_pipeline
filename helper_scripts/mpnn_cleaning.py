@@ -64,7 +64,7 @@ def combine_fasta_files(path, temps):
             file.write(fasta)
     print(f"Combined fasta files saved to {path}/combined_fasta.fa")
     print(f"Total unique sequences: {len(fasta_files)}")
-    return fasta_files  
+    return existing_sequences  
 
 # if __name__ == "__main__":
 #     path = "/work/CAND/shared/Chens/AD_fibrils/Testing"

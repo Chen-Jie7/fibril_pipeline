@@ -1,10 +1,9 @@
-# Start Generation Here
-# Ignore all files inside folders
+#ignore all files except for the following
 *
-!*/
-#except helper_scripts
+!mpnn_config.yaml
+!1_run_mpnn.py
+!2_run_upside.py
+!environment.yml
+!readme.md
 !helper_scripts/*
-# Ignore specific file
-!testing.ipynb
-# End Generation Here
-
+!helper_scripts/

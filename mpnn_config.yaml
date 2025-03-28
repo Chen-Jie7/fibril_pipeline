@@ -1,101 +1,152 @@
-#PHASES allows one to control different phases of the pipeline
-#Only one phase can be run at a time
+# MPNN Pipeline Configuration
+# This file controls the protein design pipeline using ProteinMPNN & Upside
+
+# PIPELINE PHASES
+# Control which phase of the pipeline to run (only one can be active at a time)
 Phases:
-  #Phase 1: Get PDBs, clean them up, and fast relax them
+  # Phase 1: Prepare PDBs - clean structures and perform fast relaxation
   Phase1: False
-  #Phase 2: Run MPNN
+  
+  # Phase 2: Run ProteinMPNN to generate designed sequences
   Phase2: True
-  #Phase 3: Clean up the MPNN output for ddg calculation and energetic analysis
+  
+  # Phase 3: Process MPNN outputs for energy calculation and analysis
   Phase3: False
-  #Phase 4: Design the top N fibrils with the lowest energetics
+  
+  # Phase 4: Select and refine top N fibril designs based on energetics
   Phase4: False
-  #Phase 5: Run Upside on the top N fibrils
-  #FILE 2_run_upside.py
+  
+  # Phase 5: Run Upside molecular dynamics simulations on top designs
   Phase5: False
 
-### Overall Setting
+# GLOBAL SETTINGS
 filepath:
+  # Path to conda environment containing required dependencies
   conda_env_path: "/endosome/work/CAND/shared/Chens/miniforge3/envs/upside2"
-  out_folder: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign"  # Path to output sequences folder
-  energetic_calculation_path: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign/energetics_calculation"
+  
+  # Directory where all output files will be saved
+  out_folder: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign"
+  
+  # Path to ProteinMPNN installation
   proteinMPNN_path: "/work/CAND/shared/Chens/AD_fibrils/ProteinMPNN"
-  #Could use all three it will just gather them together
-  data_bank_pdb_name: "6HRE" #Names of the PDB file to be designed, could be directly from the pdb data bank
-  #"1a42, 1a43, 1a44"
-  pdb_path: ""  # Path to a single PDB to be designed
-  pdb_folder_path: ""  # Path to a folder with PDB files to be designed
 
-# Phase 1
-### Renaming Chains and residues, retaining only one fibril, adding layers, fast relax
+  # Input PDB specification (use one of the three options below)
+  data_bank_pdb_name: "6HRE"  # PDB ID to download from PDB database
+  pdb_path: ""                # Path to a single PDB file
+  pdb_folder_path: ""         # Path to a folder containing multiple PDB files
+
+# PHASE 1 SETTINGS: PDB PREPARATION
 pdb_clean_up:
-  layers: 5  # Number of layers in the fibril, program can add or delete layers automatically
-  fast_relax: True  # Flag to use fast relax to clean up the PDB
+  # Number of layers to include in the fibril structure
+  layers: 5
+  
+  # Whether to perform Rosetta FastRelax to optimize the structure
+  fast_relax: True
 
-# Phase 2
-### MPNN Model Setting
+# PHASE 2 SETTINGS: PROTEINMPNN DESIGN
 mpnn_model_config:
-  ##Very important, should be changed
-  chains_to_design: "A B C D E"  # Define which chains need to be designed for a single PDB
-  #Specify the positions to design, if this is specifcied then fixed_positions and tied_positions 
-  #SHOULD NOT be specified
-  #since they will be generated automatically
-  positions_to_design: "3 5 7 9 11 15 17 19 22 25 27 29 34 36 38 41 43 47 51 54 56 58 60 65 67 69 71 73 75" #"9 10 11, 10 11 22"
-  fixed_positions: "" #"9 10 11, 10 11"
-  tied_positions: "" #"1 2 3 4, 1 2 3 4 " #two list must match in length; residue 1 in chain A and C will be sampled togther;
-  omit_AAs: ""  # Amino acids to omit from generated sequence
+  # DESIGN SPECIFICATION
+  # Space-separated list of chains to redesign
+  chains_to_design: "A B C D E"
+  
+  # Specific positions to redesign (space-separated residue numbers)
+  # If specified, fixed_positions and tied_positions should be left empty
+  # Recommend to find the positions based by selecting the residues in pymol then
+  # printing the residue numbers using the command: iterate selected and name CA, print (resi, resn)
+  # then copy the ouptut to gpt and ask it to give you the residue numbers in a list format separated by spaces
 
-  num_seq_per_target: 2000  # Number of sequences to generate per target
-  batch_size: 8  # Batch size; reduce if running out of GPU memory
-  sampling_temp: ["0.1", "0.2", "0.4", "0.6", "0.8","0.9","1.0"] # Sampling temperature for amino acids (0.1-0.3 recommended)
+  positions_to_design: "3 5 7 9 11 15 17 19 22 25 27 29 34 36 38 41 43 47 51 54 56 58 60 65 67 69 71 73 75"
+  
+  # Positions to keep fixed (not used if positions_to_design is specified)
+  fixed_positions: ""
+  
+  # Positions to design with identical amino acids (not used if positions_to_design is specified)
+  # Format: "1 2 3 4, 1 2 3 4" means positions 1,2,3,4 in first chain set will match 1,2,3,4 in second set
+  tied_positions: ""
+  
+  # Amino acids to exclude from the design
+  omit_AAs: ""
 
+  # SAMPLING PARAMETERS
+  # Number of sequences to generate per target structure
+  num_seq_per_target: 2000
+  
+  # Batch size for inference (reduce if running out of GPU memory)
+  batch_size: 8
+  
+  # Sampling temperatures to control design diversity
+  # Lower values (0.1-0.3) produce more conservative designs
+  # Higher values produce more diverse designs
+  sampling_temp: ["0.01", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8","0.9","1.0","10.0"]
 
-  #Not as important, can be changed
-  ca_only: false  # Parse CA-only structures and use CA-only models
-  use_soluble_model: false  # Flag to load ProteinMPNN weights trained on soluble proteins only
-  seed: 42  # If set to 0 then a random seed will be picked
-  save_score: 0  # 0 for False, 1 for True; save score=-log_prob to npy files
-  path_to_fasta: ""  # Score provided input sequence in fasta format; e.g. GGGGGG/PPPPS/WWW for chains A,B,C
-  save_probs: 0  # 0 for False, 1 for True; save MPNN predicted probabilities per position
-  score_only: 0  # 0 for False, 1 for True; score input backbone-sequence pairs
-  conditional_probs_only: 0  # 0 for False, 1 for True; output conditional probabilities
-  conditional_probs_only_backbone: 0  # 0 for False, 1 for True; output backbone conditional probabilities
-  unconditional_probs_only: 0  # 0 for False, 1 for True; output unconditional probabilities
-  backbone_noise: .2  # Standard deviation of Gaussian noise to add to backbone atoms
-  bias_AA_jsonl: ""  # Path to dictionary for AA composition bias
-  bias_by_res_jsonl: ""  # Path to dictionary with per position bias
-  omit_AA_jsonl: ""  # Path to dictionary specifying AAs to omit at specific positions
-  pssm_jsonl: ""  # Path to dictionary with PSSM
-  pssm_multi: 0.0  # Weight between MPNN and PSSM (0.0-1.0)
-  pssm_threshold: 0.0  # Threshold for restricting per position AAs
-  pssm_log_odds_flag: 0  # 0 for False, 1 for True
-  pssm_bias_flag: 0  # 0 for False, 1 for True
-  tied_positions_jsonl: ""  # Path to dictionary with tied positions
+  # ADVANCED OPTIONS
+  ca_only: false                  # Use CA-only models instead of full-atom models
+  use_soluble_model: false        # Use weights trained only on soluble proteins
+  seed: 42                        # Random seed (0 for random)
+  save_score: 1                   # Save sequence scores (-log probability)
+  path_to_fasta: ""               # Path to input sequences for scoring
+  save_probs: 1                   # Save per-position amino acid probabilities
+  score_only: 0                   # Only score input sequences without generating new ones
+  conditional_probs_only: 0       # Output conditional probabilities only
+  conditional_probs_only_backbone: 0  # Output backbone conditional probabilities
+  unconditional_probs_only: 0     # Output unconditional probabilities
+  backbone_noise: .2              # Add Gaussian noise to backbone atoms
+  
+  # BIAS CONTROL OPTIONS
+  bias_AA_jsonl: ""               # Path to AA composition bias dictionary
+  bias_by_res_jsonl: ""           # Path to position-specific bias dictionary
+  omit_AA_jsonl: ""               # Path to position-specific AA exclusion dictionary
+  pssm_jsonl: ""                  # Path to PSSM (Position-Specific Scoring Matrix)
+  pssm_multi: 0.0                 # Weight between MPNN and PSSM (0.0-1.0)
+  pssm_threshold: 0.0             # Threshold for restricting per-position AAs
+  pssm_log_odds_flag: 0           # Use log odds in PSSM
+  pssm_bias_flag: 0               # Use PSSM as bias
+  tied_positions_jsonl: ""        # Path to tied positions dictionary
 
-#Phase 3, clean up the MPNN output by removing duplicates and making them individual fasta
-#for ddg calculation and energetic analysis
+# PHASE 3 SETTINGS: OUTPUT PROCESSING
 mpnn_cleaning:
-  proteins: ["7YMN_5_min"]
-  temperatures: ["0.3", "0.5", "0.7", "1.0"]
+  # List of protein structures to process
+  proteins: ["6HRE_5_min"]
+  
+  # Temperature values to process (subset of sampling_temp from Phase 2)
+  temperatures: ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0"]
 
+  # Energy calculation settings
   energy_calculation:
-    #copy sampling temperature above unless you want to only do specific temperature
+    # Output path for energy calculation results
     output_path: "/work/CAND/shared/Chens/AD_fibrils/Testing/energetics_calculation"
 
-#Phase 4, design the top N fibrils with the lowest energetics
+# PHASE 4 SETTINGS: TOP DESIGN SELECTION
 fibril_design:
+  # List of protein structures to process
   proteins: ["7YMN_5_min"]
+  
+  # Number of top designs to select based on energetics
   N_fibrils: 15
+  
+  # Output path for selected designs
   output_path: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign"
 
-#Phase 5, run upside on the top N fibrils
-#FILE 2_run_upside.py
+# PHASE 5 SETTINGS: UPSIDE MOLECULAR DYNAMICS
 upside_simulation:
+  # User ID for cluster submission
   userid: "s229066"
-  #sinfo | grep idle to find what cpus are available for faster queue
-  #upside works with anything above 256GB
+  
+  # Compute partition for job submission
+  # Use "sinfo | grep idle" to find available resources
   partition: "256GBv2*"
+  
+  # Path to Upside MD installation
   upside_path: "/work/CAND/shared/Chens/upside2-md"
+  
+  # List of protein structures to simulate
   proteins: ["7YMN_5_min"]
+  
+  # Output path for simulation results
   output_path: "/work/CAND/shared/Chens/AD_fibrils/AD_redesign"
+  
+  # Number of independent simulation replicas
   n_reps: 10
+  
+  # Number of simulation steps per replica
   n_steps: 100000
